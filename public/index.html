@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Handtiming</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ═══ Top Bar ═══ -->
+    <header id="topbar">
+      <button id="btn-menu" class="topbar-btn" onclick="app.toggleMenu()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <h1 id="topbar-title">Handtiming</h1>
+      <button id="btn-settings" class="topbar-btn" onclick="app.navigate('settings')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- ═══ Side Menu ═══ -->
+    <div id="menu-overlay" class="menu-overlay hidden" onclick="app.toggleMenu()"></div>
+    <nav id="side-menu" class="side-menu">
+      <div class="menu-header">
+        <h2>Menu</h2>
+        <button class="topbar-btn" onclick="app.toggleMenu()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <ul id="menu-list"></ul>
+    </nav>
+
+    <!-- ═══ Views ═══ -->
+    <main id="main-content">
+
+      <!-- Events List -->
+      <div id="view-events" class="view">
+        <div class="view-header">
+          <h2>Veranstaltungen</h2>
+          <button class="btn-primary" onclick="app.navigate('create-event')">+ Neu</button>
+        </div>
+        <div id="events-list" class="card-list"></div>
+      </div>
+
+      <!-- Create Event -->
+      <div id="view-create-event" class="view hidden">
+        <div class="view-header">
+          <button class="btn-back" onclick="app.navigate('events')">&larr; Zurück</button>
+          <h2>Veranstaltung erstellen</h2>
+        </div>
+        <form id="form-event" class="form-card" onsubmit="app.createEvent(event)">
+          <div class="form-group">
+            <label>Veranstaltungsname</label>
+            <input type="text" id="event-name" required placeholder="z.B. Stadtlauf 2026">
+          </div>
+          <div class="form-group">
+            <label>Ort</label>
+            <input type="text" id="event-location" required placeholder="z.B. München">
+          </div>
+          <div class="form-group">
+            <label>Datum</label>
+            <input type="date" id="event-date" required>
+          </div>
+          <div class="form-group">
+            <label>Geplante Startzeit</label>
+            <input type="time" id="event-starttime" required>
+          </div>
+          <button type="submit" class="btn-primary btn-full">Erstellen</button>
+        </form>
+      </div>
+
+      <!-- Event Detail -->
+      <div id="view-event-detail" class="view hidden">
+        <div class="view-header">
+          <button class="btn-back" onclick="app.navigate('events')">&larr; Zurück</button>
+          <h2 id="event-detail-title">Veranstaltung</h2>
+        </div>
+        <div id="event-detail-info" class="event-info-line"></div>
+
+        <div class="view-header" style="margin-top:16px">
+          <h3>Zeitmesspunkte</h3>
+          <button class="btn-primary btn-sm" onclick="app.showCreateTimingPoint()">+ Neu</button>
+        </div>
+        <div id="timing-points-list" class="card-list"></div>
+
+        <div class="view-header" style="margin-top:20px">
+          <h3>Export</h3>
+        </div>
+        <div id="export-section" class="form-card">
+          <div id="export-tp-list"></div>
+          <div class="export-actions">
+            <button class="btn-secondary btn-sm" onclick="app.toggleAllExport()">Alle</button>
+            <button class="btn-primary btn-sm" onclick="app.exportSelectedCsv()">CSV herunterladen</button>
+            <button class="btn-primary btn-sm" onclick="app.showEmailDialog('selected')">Per E-Mail</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create/Edit Timing Point -->
+      <div id="view-create-tp" class="view hidden">
+        <div class="view-header">
+          <button class="btn-back" onclick="app.navigateToEventDetail()">&larr; Zurück</button>
+          <h2 id="create-tp-title">Zeitmesspunkt erstellen</h2>
+        </div>
+        <form id="form-tp" class="form-card" onsubmit="app.saveTimingPoint(event)">
+          <input type="hidden" id="tp-edit-id">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="tp-name" required placeholder="z.B. Start, Ziel, KM 5">
+          </div>
+          <div class="form-group">
+            <label>Vorname (optional)</label>
+            <input type="text" id="tp-firstname" placeholder="Vorname des Zeitnehmers">
+          </div>
+          <div class="form-group">
+            <label>Nachname (optional)</label>
+            <input type="text" id="tp-lastname" placeholder="Nachname des Zeitnehmers">
+          </div>
+          <div class="form-group">
+            <label>Standort auf Karte (optional)</label>
+            <div class="map-wrapper">
+              <div id="tp-map" class="map-container"></div>
+              <button type="button" class="btn-map-fullscreen" onclick="app.toggleMapFullscreen()" title="Vollbild">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
+            <button type="button" class="btn-locate-below" onclick="app.useCurrentLocation()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+              </svg>
+              Meinen Standort verwenden
+            </button>
+            <input type="hidden" id="tp-lat">
+            <input type="hidden" id="tp-lng">
+          </div>
+          <button type="submit" class="btn-primary btn-full" id="tp-submit-btn">Erstellen</button>
+        </form>
+      </div>
+
+      <!-- Timing Screen -->
+      <div id="view-timing" class="view hidden">
+        <div class="view-header">
+          <button class="btn-back" onclick="app.navigateToEventDetail()">&larr; Zurück</button>
+          <h2 id="timing-title">Zeitmessung</h2>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="input" onclick="app.switchTab('input')">Eingabe</button>
+          <button class="tab" data-tab="all" onclick="app.switchTab('all')">Alle Einträge</button>
+          <button class="tab" data-tab="duplicates" onclick="app.switchTab('duplicates')">Doppelte</button>
+        </div>
+
+        <!-- Input Tab -->
+        <div id="tab-input" class="tab-content">
+          <div id="last-entries" class="last-entries"></div>
+          <div class="input-display">
+            <div id="timing-timestamp" class="timestamp-display"></div>
+            <div class="input-row">
+              <input type="text" id="timing-input" class="timing-input" readonly placeholder="Startnummer">
+              <button class="btn-clear" onclick="app.clearInput()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <p class="hint" style="text-align:center;margin-top:4px">&#8592; Wischen zum Löschen &#8594;</p>
+          </div>
+          <div class="numpad">
+            <button class="numpad-btn" onclick="app.numInput('1')">1</button>
+            <button class="numpad-btn" onclick="app.numInput('2')">2</button>
+            <button class="numpad-btn" onclick="app.numInput('3')">3</button>
+            <button class="numpad-btn" onclick="app.numInput('4')">4</button>
+            <button class="numpad-btn" onclick="app.numInput('5')">5</button>
+            <button class="numpad-btn" onclick="app.numInput('6')">6</button>
+            <button class="numpad-btn" onclick="app.numInput('7')">7</button>
+            <button class="numpad-btn" onclick="app.numInput('8')">8</button>
+            <button class="numpad-btn" onclick="app.numInput('9')">9</button>
+            <button class="numpad-btn numpad-c" onclick="app.clearInput()">C</button>
+            <button class="numpad-btn" onclick="app.numInput('0')">0</button>
+            <button class="numpad-btn numpad-enter" onclick="app.submitEntry()">&#9166;</button>
+          </div>
+        </div>
+
+        <!-- All Entries Tab -->
+        <div id="tab-all" class="tab-content hidden">
+          <div id="all-entries-list" class="entries-list"></div>
+        </div>
+
+        <!-- Duplicates Tab -->
+        <div id="tab-duplicates" class="tab-content hidden">
+          <div id="duplicate-entries-list" class="entries-list"></div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div id="view-settings" class="view hidden">
+        <div class="view-header">
+          <button class="btn-back" onclick="app.navigateBack()">&larr; Zurück</button>
+          <h2>Einstellungen</h2>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-stab="display" onclick="app.switchSettingsTab('display')">Anzeige</button>
+          <button class="tab" data-stab="email" onclick="app.switchSettingsTab('email')">E-Mail</button>
+        </div>
+        <div id="stab-display" class="settings-tab-content form-card">
+          <div class="form-group">
+            <label>Anzeigemodus</label>
+            <select id="setting-display-mode">
+              <option value="number">Nur Startnummer</option>
+              <option value="numberTime">Startnummer + Uhrzeit</option>
+              <option value="numberDateTime">Startnummer + Datum + Uhrzeit</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Farbe für doppelte Einträge</label>
+            <input type="color" id="setting-duplicate-color" value="#FF3B30">
+          </div>
+          <button class="btn-primary btn-full" onclick="app.saveSettings()">Speichern</button>
+        </div>
+        <div id="stab-email" class="settings-tab-content form-card hidden">
+          <div class="form-group">
+            <label>SMTP Server</label>
+            <input type="text" id="setting-smtp" placeholder="z.B. smtp.gmail.com">
+          </div>
+          <div class="form-group">
+            <label>Port</label>
+            <input type="number" id="setting-port" value="587">
+          </div>
+          <div class="form-group">
+            <label>Benutzername</label>
+            <input type="text" id="setting-email-user" placeholder="user@example.com">
+          </div>
+          <div class="form-group">
+            <label>Passwort</label>
+            <input type="password" id="setting-email-pass">
+          </div>
+          <div class="form-group">
+            <label>Absender-Adresse</label>
+            <input type="email" id="setting-email-from" placeholder="noreply@example.com">
+          </div>
+          <button class="btn-primary btn-full" onclick="app.saveSettings()">Speichern</button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Email Dialog -->
+    <div id="email-dialog" class="dialog-overlay hidden">
+      <div class="dialog">
+        <h3 id="email-dialog-title">CSV per E-Mail senden</h3>
+        <div class="form-group">
+          <label>Empfänger E-Mail</label>
+          <input type="email" id="email-recipient" placeholder="empfaenger@example.com">
+        </div>
+        <div class="dialog-actions">
+          <button class="btn-secondary" onclick="app.hideEmailDialog()">Abbrechen</button>
+          <button class="btn-primary" onclick="app.sendEmail()">Senden</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Entry Dialog -->
+    <div id="edit-entry-dialog" class="dialog-overlay hidden">
+      <div class="dialog">
+        <h3>Startnummer bearbeiten</h3>
+        <input type="hidden" id="edit-entry-id">
+        <div class="form-group">
+          <label>Startnummer</label>
+          <input type="text" id="edit-entry-number" inputmode="numeric" pattern="[0-9]*">
+        </div>
+        <div class="dialog-actions">
+          <button class="btn-secondary" onclick="app.hideEditEntry()">Abbrechen</button>
+          <button class="btn-primary" onclick="app.saveEditEntry()">Speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+  </div>
+
+  <!-- Fullscreen Map Overlay (outside #app to avoid overflow clipping) -->
+  <div id="map-fullscreen-overlay" class="fullscreen-overlay hidden">
+    <div class="fullscreen-header">
+      <button class="btn-back" onclick="app.toggleMapFullscreen()" style="color:#fff">&larr; Zurück</button>
+      <h2 style="color:#fff;font-size:16px">Standort wählen</h2>
+      <button class="btn-primary btn-sm" onclick="app.confirmMapLocation()">Fertig</button>
+    </div>
+    <div class="fullscreen-map-area"><div id="tp-map-fullscreen" class="map-fullscreen"></div></div>
+    <div class="fullscreen-footer">
+      <button type="button" class="btn-locate-fullscreen" onclick="app.useCurrentLocationFullscreen()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+        </svg>
+        Meinen Standort verwenden
+      </button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
