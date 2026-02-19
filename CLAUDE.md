@@ -17,7 +17,8 @@ Single-page application for hand-timing at sporting events. German-language UI.
 - File-based JSON storage in `data/` directory (not committed to git)
 - CSV generation per timing point, ZIP export for multiple timing points via `archiver`
 - Email sending via `nodemailer` with SMTP settings stored in `data/settings.json`
-- Socket.io rooms per timing point (`tp_{id}`) — emits `new-entry`, `delete-entry`, `update-entry`, `settings-updated`
+- Startlist CSV upload via `multer` (multipart/form-data), stored per event
+- Socket.io rooms per timing point (`tp_{id}`) — emits `new-entry`, `delete-entry`, `update-entry`, `settings-updated`, `dnfdns-updated`
 
 ### Frontend (`public/`)
 - Vanilla JS SPA — no framework, no build step
@@ -29,14 +30,19 @@ Single-page application for hand-timing at sporting events. German-language UI.
 
 ### Data Model
 - **Events** → have many **Timing Points** → have many **Entries**
+- **Startlist** per event: `data/startlist_{eventId}.json` — shared across all timing points
+- **DNF/DNS** per timing point: `data/dnfdns_{tpId}.json`
 - Entries stored per timing point: `data/entries_{tpId}.json`
 - CSV files auto-generated on each entry change: `data/entries_{tpId}.csv`
 - Timestamps captured client-side at first digit press (not on confirm)
+- Cleanup: deleting an event or timing point removes all associated data files (entries, CSV, startlist, dnfdns)
 
 ### API Routes
 - `/api/events` — CRUD for events
-- `/api/events/:eventId/timing-points` — timing points per event (enriched with `entryCount`, `duplicateCount`)
+- `/api/events/:eventId/timing-points` — timing points per event
+- `/api/events/:id/startlist` — POST (CSV upload), GET, DELETE startlist per event
 - `/api/timing-points/:id/entries` — entries per timing point
+- `/api/timing-points/:id/dnf-dns` — GET, POST, DELETE DNF/DNS markers per timing point
 - `/api/entries/:timingPointId/:entryId` — update/delete individual entries
 - `/api/timing-points/:id/csv` — single CSV download
 - `/api/events/:id/csv?tpIds=...` — selective ZIP/CSV export
@@ -47,5 +53,7 @@ Single-page application for hand-timing at sporting events. German-language UI.
 - All IDs are UUIDs (via `uuid` package)
 - German locale for date/time formatting (`de-DE`)
 - CSV delimiter is semicolon (`;`), timestamps include hundredths of seconds
+- Startlist CSV format: `Startnummer;Nachname;Vorname;Geschlecht;Jahrgang` (header required)
 - Email subject format: `{EventName} - {Date} - {TimingPointName}`
 - Fullscreen map overlay lives outside `#app` div to avoid z-index conflicts with Leaflet controls
+- Timing view has 5 tabs: Eingabe, Alle, Doppelte, Startliste, DNF/DNS
