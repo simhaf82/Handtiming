@@ -157,10 +157,12 @@
           <h2 id="timing-title">Zeitmessung</h2>
         </div>
 
-        <div class="tabs">
+        <div class="tabs tabs-5">
           <button class="tab active" data-tab="input" onclick="app.switchTab('input')">Eingabe</button>
-          <button class="tab" data-tab="all" onclick="app.switchTab('all')">Alle Einträge</button>
+          <button class="tab" data-tab="all" onclick="app.switchTab('all')">Alle</button>
           <button class="tab" data-tab="duplicates" onclick="app.switchTab('duplicates')">Doppelte</button>
+          <button class="tab" data-tab="startlist" onclick="app.switchTab('startlist')">Startliste</button>
+          <button class="tab" data-tab="dnfdns" onclick="app.switchTab('dnfdns')">DNF/DNS</button>
         </div>
 
         <!-- Input Tab -->
@@ -202,6 +204,41 @@
         <!-- Duplicates Tab -->
         <div id="tab-duplicates" class="tab-content hidden">
           <div id="duplicate-entries-list" class="entries-list"></div>
+        </div>
+
+        <!-- Startlist Tab -->
+        <div id="tab-startlist" class="tab-content hidden">
+          <div id="startlist-upload" class="startlist-upload-area">
+            <p>Keine Startliste vorhanden.</p>
+            <input type="file" id="startlist-file" accept=".csv" style="display:none" onchange="app.uploadStartlist()">
+            <button class="btn-primary btn-sm" onclick="document.getElementById('startlist-file').click()">CSV hochladen</button>
+          </div>
+          <div id="startlist-content" class="hidden">
+            <div class="startlist-actions">
+              <span id="startlist-count" class="startlist-count"></span>
+              <button class="btn-secondary btn-sm" onclick="document.getElementById('startlist-file').click()">Ersetzen</button>
+              <button class="btn-icon btn-icon-delete" onclick="app.deleteStartlist()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                Löschen
+              </button>
+            </div>
+            <div id="startlist-table" class="startlist-table"></div>
+          </div>
+        </div>
+
+        <!-- DNF/DNS Tab -->
+        <div id="tab-dnfdns" class="tab-content hidden">
+          <div class="dnfdns-input-area">
+            <div class="dnfdns-input-row">
+              <input type="text" id="dnfdns-number" inputmode="numeric" pattern="[0-9]*" placeholder="Startnummer">
+              <select id="dnfdns-type">
+                <option value="DNF">DNF</option>
+                <option value="DNS">DNS</option>
+              </select>
+              <button class="btn-primary btn-sm" onclick="app.addDnfDns()">Hinzufügen</button>
+            </div>
+          </div>
+          <div id="dnfdns-list" class="dnfdns-list"></div>
         </div>
       </div>
 

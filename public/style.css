@@ -255,6 +255,47 @@ body {
 .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 600; box-shadow: var(--shadow-lg); transition: opacity 0.3s, transform 0.3s; }
 .toast.hidden { opacity: 0; transform: translateX(-50%) translateY(10px); pointer-events: none; }
 
+/* ─── 5-Tab Layout ─────────────────────────────────────────────────────── */
+.tabs-5 .tab { padding: 7px 4px; font-size: 11px; }
+
+/* ─── Startlist ────────────────────────────────────────────────────────── */
+.startlist-upload-area { text-align: center; padding: 30px 20px; }
+.startlist-upload-area p { color: var(--text-secondary); margin-bottom: 12px; font-size: 14px; }
+.startlist-actions { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.startlist-count { font-size: 13px; color: var(--text-secondary); flex: 1; }
+
+.startlist-table { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.sl-header { display: flex; padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; border-bottom: 1px solid var(--separator); }
+.sl-row { display: flex; padding: 8px 10px; font-size: 13px; border-bottom: 0.5px solid var(--separator); align-items: center; }
+.sl-row:last-child { border-bottom: none; }
+.sl-row:nth-child(even) { background: var(--bg); }
+.sl-finished { background: rgba(52, 199, 89, 0.08) !important; }
+.sl-dnf { background: rgba(255, 59, 48, 0.06) !important; }
+.sl-dns { background: rgba(255, 149, 0, 0.06) !important; }
+.sl-col-nr { width: 44px; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.sl-col-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sl-col-gender { width: 24px; text-align: center; flex-shrink: 0; }
+.sl-col-year { width: 40px; text-align: center; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.sl-col-status { width: 40px; text-align: center; flex-shrink: 0; }
+.sl-status-ok { color: var(--success); font-size: 16px; font-weight: 700; }
+.sl-status-dnf { color: var(--danger); font-size: 10px; font-weight: 700; }
+.sl-status-dns { color: #FF9500; font-size: 10px; font-weight: 700; }
+
+/* ─── DNF/DNS ──────────────────────────────────────────────────────────── */
+.dnfdns-input-area { margin-bottom: 12px; }
+.dnfdns-input-row { display: flex; gap: 8px; align-items: center; }
+.dnfdns-input-row input { flex: 1; padding: 10px 12px; font-size: 16px; border: 1px solid var(--separator); border-radius: var(--radius); background: var(--bg); font-family: inherit; outline: none; }
+.dnfdns-input-row input:focus { border-color: var(--primary); }
+.dnfdns-input-row select { padding: 10px 8px; font-size: 14px; border: 1px solid var(--separator); border-radius: var(--radius); background: var(--bg); font-family: inherit; outline: none; -webkit-appearance: none; }
+.dnfdns-list { display: flex; flex-direction: column; gap: 4px; }
+.dnfdns-item { background: var(--card); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px; }
+.dnfdns-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+.dnfdns-dnf { background: rgba(255, 59, 48, 0.12); color: var(--danger); }
+.dnfdns-dns { background: rgba(255, 149, 0, 0.12); color: #FF9500; }
+.dnfdns-nr { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dnfdns-name { font-size: 13px; color: var(--text-secondary); flex: 1; }
+.dnfdns-item .entry-delete { margin-left: auto; }
+
 /* ─── Responsive & Scrollbar ────────────────────────────────────────────── */
 @media (min-width: 501px) { #app { border-left: 0.5px solid var(--separator); border-right: 0.5px solid var(--separator); } }
 ::-webkit-scrollbar { width: 0; }

@@ -3,9 +3,12 @@ const http = require('http');
 const { Server } = require('socket.io');
 const nodemailer = require('nodemailer');
 const archiver = require('archiver');
+const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const app = express();
 const server = http.createServer(app);
@@ -107,7 +110,13 @@ app.delete('/api/events/:id', (req, res) => {
     if (fs.existsSync(entryFile)) fs.unlinkSync(entryFile);
     const csvFile = path.join(DATA_DIR, `entries_${tpId}.csv`);
     if (fs.existsSync(csvFile)) fs.unlinkSync(csvFile);
+    const dnfdnsFile = path.join(DATA_DIR, `dnfdns_${tpId}.json`);
+    if (fs.existsSync(dnfdnsFile)) fs.unlinkSync(dnfdnsFile);
   });
+
+  // Delete startlist for this event
+  const startlistFile = path.join(DATA_DIR, `startlist_${req.params.id}.json`);
+  if (fs.existsSync(startlistFile)) fs.unlinkSync(startlistFile);
 
   res.json({ success: true });
 });
@@ -162,6 +171,8 @@ app.delete('/api/timing-points/:id', (req, res) => {
   if (fs.existsSync(entryFile)) fs.unlinkSync(entryFile);
   const csvFile = path.join(DATA_DIR, `entries_${req.params.id}.csv`);
   if (fs.existsSync(csvFile)) fs.unlinkSync(csvFile);
+  const dnfdnsFile = path.join(DATA_DIR, `dnfdns_${req.params.id}.json`);
+  if (fs.existsSync(dnfdnsFile)) fs.unlinkSync(dnfdnsFile);
 
   res.json({ success: true });
 });
@@ -194,6 +205,84 @@ app.delete('/api/entries/:timingPointId/:entryId', (req, res) => {
   saveData(`entries_${req.params.timingPointId}.json`, entries);
   updateCsv(req.params.timingPointId, entries);
   io.to(`tp_${req.params.timingPointId}`).emit('delete-entry', req.params.entryId);
+  res.json({ success: true });
+});
+
+// ─── Startlist API (per Event) ───────────────────────────────────────────
+
+app.post('/api/events/:id/startlist', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Keine Datei hochgeladen' });
+  const csv = req.file.buffer.toString('utf8');
+  const lines = csv.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return res.status(400).json({ error: 'CSV ist leer oder hat nur Header' });
+
+  // Parse header to find column indices
+  const header = lines[0].split(';').map(h => h.trim().toLowerCase());
+  const colMap = {};
+  header.forEach((h, i) => {
+    if (h === 'startnummer') colMap.startNumber = i;
+    else if (h === 'nachname') colMap.lastName = i;
+    else if (h === 'vorname') colMap.firstName = i;
+    else if (h === 'geschlecht') colMap.gender = i;
+    else if (h === 'jahrgang') colMap.yearOfBirth = i;
+  });
+
+  if (colMap.startNumber === undefined) {
+    return res.status(400).json({ error: 'Spalte "Startnummer" nicht gefunden' });
+  }
+
+  const startlist = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(';').map(c => c.trim());
+    if (!cols[colMap.startNumber]) continue;
+    startlist.push({
+      startNumber: cols[colMap.startNumber] || '',
+      lastName: cols[colMap.lastName] || '',
+      firstName: cols[colMap.firstName] || '',
+      gender: cols[colMap.gender] || '',
+      yearOfBirth: cols[colMap.yearOfBirth] || ''
+    });
+  }
+
+  saveData(`startlist_${req.params.id}.json`, startlist);
+  res.json(startlist);
+});
+
+app.get('/api/events/:id/startlist', (req, res) => {
+  res.json(loadData(`startlist_${req.params.id}.json`));
+});
+
+app.delete('/api/events/:id/startlist', (req, res) => {
+  const filePath = path.join(DATA_DIR, `startlist_${req.params.id}.json`);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  res.json({ success: true });
+});
+
+// ─── DNF/DNS API (per Timing Point) ─────────────────────────────────────
+
+app.get('/api/timing-points/:id/dnf-dns', (req, res) => {
+  res.json(loadData(`dnfdns_${req.params.id}.json`));
+});
+
+app.post('/api/timing-points/:id/dnf-dns', (req, res) => {
+  const { startNumber, type } = req.body;
+  if (!startNumber || !['DNF', 'DNS'].includes(type)) {
+    return res.status(400).json({ error: 'Startnummer und Typ (DNF/DNS) erforderlich' });
+  }
+  const list = loadData(`dnfdns_${req.params.id}.json`);
+  // Remove existing entry for same startNumber if any
+  const filtered = list.filter(e => e.startNumber !== startNumber);
+  filtered.push({ startNumber, type, createdAt: new Date().toISOString() });
+  saveData(`dnfdns_${req.params.id}.json`, filtered);
+  io.to(`tp_${req.params.id}`).emit('dnfdns-updated', filtered);
+  res.json(filtered);
+});
+
+app.delete('/api/timing-points/:id/dnf-dns/:startNumber', (req, res) => {
+  let list = loadData(`dnfdns_${req.params.id}.json`);
+  list = list.filter(e => e.startNumber !== req.params.startNumber);
+  saveData(`dnfdns_${req.params.id}.json`, list);
+  io.to(`tp_${req.params.id}`).emit('dnfdns-updated', list);
   res.json({ success: true });
 });
 

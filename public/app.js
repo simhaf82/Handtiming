@@ -7,6 +7,7 @@ const app = {
   currentView: 'events', previousView: 'events',
   currentEventId: null, currentTimingPointId: null,
   entries: [], settings: {}, inputValue: '', inputTimestamp: null,
+  startlist: [], dnfdns: [],
   socket: null, map: null, mapMarker: null, mapLocationMarker: null,
   fullscreenMap: null, fullscreenMarker: null, isMapFullscreen: false,
   emailMode: null, exportTimingPoints: [],
@@ -29,6 +30,7 @@ const app = {
       if (idx !== -1) { this.entries[idx] = updated; this.renderEntries(); }
     });
     this.socket.on('settings-updated', (s) => { this.settings = s; this.applySettings(); this.renderEntries(); });
+    this.socket.on('dnfdns-updated', (list) => { this.dnfdns = list; this.renderDnfDns(); this.renderStartlist(); });
 
     document.addEventListener('keydown', (e) => {
       if (this.currentView !== 'timing') return;
@@ -296,7 +298,14 @@ const app = {
     this.socket.emit('join-timing-point', tpId);
     const tp = await this.api('GET', `/api/timing-points/${tpId}`);
     document.getElementById('timing-title').textContent = tp.name;
-    this.entries = await this.api('GET', `/api/timing-points/${tpId}/entries`);
+    const [entries, startlist, dnfdns] = await Promise.all([
+      this.api('GET', `/api/timing-points/${tpId}/entries`),
+      this.api('GET', `/api/events/${this.currentEventId}/startlist`),
+      this.api('GET', `/api/timing-points/${tpId}/dnf-dns`)
+    ]);
+    this.entries = entries;
+    this.startlist = startlist;
+    this.dnfdns = dnfdns;
     document.getElementById('timing-input').value = ''; document.getElementById('timing-timestamp').textContent = '';
     this.navigate('timing'); this.switchTab('input'); this.renderEntries();
   },
@@ -308,6 +317,8 @@ const app = {
     document.querySelectorAll('#view-timing .tab-content').forEach(tc => tc.classList.add('hidden'));
     document.getElementById(`tab-${tab}`).classList.remove('hidden');
     if (tab === 'all' || tab === 'duplicates') this.renderEntriesList(tab);
+    if (tab === 'startlist') this.renderStartlist();
+    if (tab === 'dnfdns') this.renderDnfDns();
   },
   switchSettingsTab(tab) {
     document.querySelectorAll('#view-settings .tab').forEach(t => t.classList.remove('active'));
@@ -368,6 +379,7 @@ const app = {
 
     const activeTab = document.querySelector('#view-timing .tab.active');
     if (activeTab && (activeTab.dataset.tab === 'all' || activeTab.dataset.tab === 'duplicates')) this.renderEntriesList(activeTab.dataset.tab);
+    if (activeTab && activeTab.dataset.tab === 'startlist') this.renderStartlist();
   },
 
   attachEntrySwipe(el) {
@@ -435,6 +447,98 @@ const app = {
       if (idx !== -1) this.entries[idx] = updated;
       this.renderEntries(); this.hideEditEntry(); this.showToast('Startnummer geändert');
     } catch (err) { this.showToast('Fehler: ' + err.message); }
+  },
+
+  // ─── Startlist ─────────────────────────────────────────────────────────
+  async uploadStartlist() {
+    const fileInput = document.getElementById('startlist-file');
+    if (!fileInput.files.length) return;
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    try {
+      const res = await fetch(`/api/events/${this.currentEventId}/startlist`, { method: 'POST', body: formData });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Fehler'); }
+      this.startlist = await res.json();
+      this.showToast(`${this.startlist.length} Teilnehmer importiert`);
+      this.renderStartlist();
+    } catch (err) { this.showToast('Fehler: ' + err.message); }
+    fileInput.value = '';
+  },
+  async deleteStartlist() {
+    if (!confirm('Startliste wirklich löschen?')) return;
+    await this.api('DELETE', `/api/events/${this.currentEventId}/startlist`);
+    this.startlist = [];
+    this.showToast('Startliste gelöscht');
+    this.renderStartlist();
+  },
+  renderStartlist() {
+    const uploadArea = document.getElementById('startlist-upload');
+    const content = document.getElementById('startlist-content');
+    const table = document.getElementById('startlist-table');
+    if (!this.startlist.length) {
+      uploadArea.classList.remove('hidden');
+      content.classList.add('hidden');
+      return;
+    }
+    uploadArea.classList.add('hidden');
+    content.classList.remove('hidden');
+
+    const entryNumbers = new Set(this.entries.map(e => e.startNumber));
+    const dnfDnsNumbers = {};
+    this.dnfdns.forEach(d => { dnfDnsNumbers[d.startNumber] = d.type; });
+
+    const finishedCount = this.startlist.filter(s => entryNumbers.has(s.startNumber)).length;
+    const dnfCount = this.dnfdns.filter(d => d.type === 'DNF').length;
+    const dnsCount = this.dnfdns.filter(d => d.type === 'DNS').length;
+    document.getElementById('startlist-count').textContent = `${finishedCount}/${this.startlist.length} gewertet` + (dnfCount ? ` · ${dnfCount} DNF` : '') + (dnsCount ? ` · ${dnsCount} DNS` : '');
+
+    table.innerHTML = `<div class="sl-header"><span class="sl-col-nr">Nr</span><span class="sl-col-name">Name</span><span class="sl-col-gender">G</span><span class="sl-col-year">Jg</span><span class="sl-col-status">Status</span></div>` +
+      this.startlist.map(s => {
+        const hasTime = entryNumbers.has(s.startNumber);
+        const dnfDns = dnfDnsNumbers[s.startNumber];
+        let statusHtml = '';
+        if (hasTime) statusHtml = '<span class="sl-status-ok">&#10003;</span>';
+        else if (dnfDns === 'DNF') statusHtml = '<span class="sl-status-dnf">DNF</span>';
+        else if (dnfDns === 'DNS') statusHtml = '<span class="sl-status-dns">DNS</span>';
+        return `<div class="sl-row ${hasTime ? 'sl-finished' : ''} ${dnfDns ? 'sl-' + dnfDns.toLowerCase() : ''}"><span class="sl-col-nr">${this.esc(s.startNumber)}</span><span class="sl-col-name">${this.esc(s.lastName)} ${this.esc(s.firstName)}</span><span class="sl-col-gender">${this.esc(s.gender)}</span><span class="sl-col-year">${this.esc(s.yearOfBirth)}</span><span class="sl-col-status">${statusHtml}</span></div>`;
+      }).join('');
+  },
+
+  // ─── DNF/DNS ──────────────────────────────────────────────────────────
+  async addDnfDns() {
+    const num = document.getElementById('dnfdns-number').value.trim();
+    const type = document.getElementById('dnfdns-type').value;
+    if (!num) { this.showToast('Startnummer eingeben'); return; }
+    try {
+      this.dnfdns = await this.api('POST', `/api/timing-points/${this.currentTimingPointId}/dnf-dns`, { startNumber: num, type });
+      document.getElementById('dnfdns-number').value = '';
+      this.showToast(`${num} als ${type} markiert`);
+      this.renderDnfDns();
+      this.renderStartlist();
+    } catch (err) { this.showToast('Fehler: ' + err.message); }
+  },
+  async removeDnfDns(startNumber) {
+    try {
+      await this.api('DELETE', `/api/timing-points/${this.currentTimingPointId}/dnf-dns/${startNumber}`);
+      this.dnfdns = this.dnfdns.filter(d => d.startNumber !== startNumber);
+      this.renderDnfDns();
+      this.renderStartlist();
+    } catch (err) { this.showToast('Fehler: ' + err.message); }
+  },
+  renderDnfDns() {
+    const list = document.getElementById('dnfdns-list');
+    if (!this.dnfdns.length) {
+      list.innerHTML = '<div class="empty-state">Keine DNF/DNS-Einträge</div>';
+      return;
+    }
+    // Find names from startlist
+    const nameMap = {};
+    this.startlist.forEach(s => { nameMap[s.startNumber] = `${s.lastName} ${s.firstName}`.trim(); });
+
+    list.innerHTML = this.dnfdns.map(d => {
+      const name = nameMap[d.startNumber] || '';
+      return `<div class="dnfdns-item"><span class="dnfdns-badge dnfdns-${d.type.toLowerCase()}">${d.type}</span><span class="dnfdns-nr">${this.esc(d.startNumber)}</span>${name ? `<span class="dnfdns-name">${this.esc(name)}</span>` : ''}<button class="entry-delete" onclick="app.removeDnfDns('${this.esc(d.startNumber)}')">&#10005;</button></div>`;
+    }).join('');
   },
 
   // ─── CSV & Email ───────────────────────────────────────────────────────
