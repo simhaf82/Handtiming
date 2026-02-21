@@ -55,7 +55,6 @@ body {
 
 /* ─── Main Content ──────────────────────────────────────────────────────── */
 #main-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-#main-content.timing-active { overflow: hidden; display: flex; flex-direction: column; }
 .view { padding: 16px; min-height: 100%; }
 .view.hidden { display: none; }
 .view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -180,17 +179,11 @@ body {
 .settings-tab-content.hidden { display: none; }
 
 /* ─── Timing Screen ─────────────────────────────────────────────────────── */
-#view-timing { display: flex; flex-direction: column; flex: 1; min-height: 0; padding-bottom: 0; overflow: hidden; }
-#view-timing .view-header { flex-shrink: 0; }
-#view-timing .tabs { flex-shrink: 0; }
-#tab-input { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
-#tab-input.hidden { display: none; }
-.last-entries { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; flex: 1; overflow-y: auto; min-height: 0; }
-.input-display { flex-shrink: 0; margin-bottom: 12px; }
-.numpad { flex-shrink: 0; }
+.last-entries { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; max-height: 270px; overflow-y: auto; }
+.input-display { margin-bottom: 12px; }
 
 .last-entry {
-  background: var(--card); border-radius: var(--radius); padding: 10px 14px;
+  background: var(--card); border-radius: var(--radius); padding: 14px 14px;
   box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between;
   font-size: 14px; animation: slideIn 0.2s ease; position: relative; overflow: hidden;
   touch-action: pan-y;
@@ -242,7 +235,7 @@ body {
 
 /* ─── Entries List ──────────────────────────────────────────────────────── */
 .entries-list { display: flex; flex-direction: column; gap: 4px; }
-.entry-item { background: var(--card); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; }
+.entry-item { background: var(--card); border-radius: var(--radius); padding: 14px 14px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; }
 .entry-item .entry-info { display: flex; align-items: center; gap: 12px; flex: 1; }
 .entry-item .entry-number { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; }
 .entry-item .entry-number:active { color: var(--primary); }

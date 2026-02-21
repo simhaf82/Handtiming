@@ -70,9 +70,6 @@ const app = {
     this.previousView = this.currentView; this.currentView = view;
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     const el = document.getElementById(`view-${view}`); if (el) el.classList.remove('hidden');
-    const mc = document.getElementById('main-content');
-    if (view === 'timing') mc.classList.add('timing-active');
-    else mc.classList.remove('timing-active');
     this.closeMenu();
     if (view === 'events') this.loadEvents();
     else if (view === 'settings') this.loadSettings();
