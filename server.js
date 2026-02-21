@@ -125,11 +125,24 @@ app.delete('/api/events/:id', (req, res) => {
 
 app.get('/api/events/:eventId/timing-points', (req, res) => {
   const timingPoints = loadData('timingpoints.json');
-  res.json(timingPoints.filter(tp => tp.eventId === req.params.eventId));
+  const filtered = timingPoints.filter(tp => tp.eventId === req.params.eventId);
+  // Sort by order field if present
+  filtered.sort((a, b) => (a.order || 0) - (b.order || 0));
+  // Enrich with entryCount and duplicateCount
+  const enriched = filtered.map(tp => {
+    const entries = loadData(`entries_${tp.id}.json`);
+    const counts = {};
+    entries.forEach(e => { counts[e.startNumber] = (counts[e.startNumber] || 0) + 1; });
+    const duplicateCount = Object.values(counts).filter(c => c > 1).length;
+    return { ...tp, entryCount: entries.length, duplicateCount };
+  });
+  res.json(enriched);
 });
 
 app.post('/api/events/:eventId/timing-points', (req, res) => {
   const timingPoints = loadData('timingpoints.json');
+  const existing = timingPoints.filter(t => t.eventId === req.params.eventId);
+  const maxOrder = existing.reduce((max, t) => Math.max(max, t.order || 0), -1);
   const tp = {
     id: uuidv4(),
     eventId: req.params.eventId,
@@ -138,6 +151,7 @@ app.post('/api/events/:eventId/timing-points', (req, res) => {
     lastName: req.body.lastName || '',
     latitude: req.body.latitude || null,
     longitude: req.body.longitude || null,
+    order: maxOrder + 1,
     createdAt: new Date().toISOString()
   };
   timingPoints.push(tp);
@@ -174,6 +188,20 @@ app.delete('/api/timing-points/:id', (req, res) => {
   const dnfdnsFile = path.join(DATA_DIR, `dnfdns_${req.params.id}.json`);
   if (fs.existsSync(dnfdnsFile)) fs.unlinkSync(dnfdnsFile);
 
+  res.json({ success: true });
+});
+
+// ─── Reorder Timing Points ───────────────────────────────────────────────
+
+app.put('/api/events/:eventId/timing-points/reorder', (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids array required' });
+  const timingPoints = loadData('timingpoints.json');
+  ids.forEach((id, index) => {
+    const tp = timingPoints.find(t => t.id === id && t.eventId === req.params.eventId);
+    if (tp) tp.order = index;
+  });
+  saveData('timingpoints.json', timingPoints);
   res.json({ success: true });
 });
 

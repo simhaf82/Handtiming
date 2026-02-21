@@ -70,6 +70,9 @@ const app = {
     this.previousView = this.currentView; this.currentView = view;
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     const el = document.getElementById(`view-${view}`); if (el) el.classList.remove('hidden');
+    const mc = document.getElementById('main-content');
+    if (view === 'timing') mc.classList.add('timing-active');
+    else mc.classList.remove('timing-active');
     this.closeMenu();
     if (view === 'events') this.loadEvents();
     else if (view === 'settings') this.loadSettings();
@@ -91,7 +94,7 @@ const app = {
   async updateMenu() {
     const events = await this.api('GET', '/api/events');
     let html = `<li onclick="app.navigate('events')"><span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></span>Veranstaltungen</li>`;
-    html += `<li onclick="app.navigate('settings')"><span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></span>Einstellungen</li>`;
+    html += `<li onclick="app.navigate('settings')"><span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Einstellungen</li>`;
     if (events.length > 0) {
       html += `<li class="menu-divider" style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;cursor:default">Veranstaltungen</li>`;
       events.forEach(ev => { html += `<li onclick="app.currentEventId='${ev.id}';app.navigateToEventDetail()"><span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>${this.esc(ev.name)}</li>`; });
@@ -112,10 +115,10 @@ const app = {
         </div>
         <div class="card-actions">
           <button class="btn-icon btn-icon-delete" onclick="event.stopPropagation();app.deleteEvent('${ev.id}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           </button>
         </div>
-        <span class="card-arrow">&#8250;</span>
+        <span class="card-dot">&middot;</span>
       </div>`).join('');
   },
   async createEvent(e) {
@@ -136,6 +139,7 @@ const app = {
     const c = document.getElementById('timing-points-list');
     if (!tps.length) { c.innerHTML = '<div class="empty-state">Noch keine Zeitmesspunkte.</div>'; }
     else {
+      tps.forEach((tp, i) => { tp._isFirst = i === 0; tp._isLast = i === tps.length - 1; });
       c.innerHTML = tps.map(tp => `
         <div class="card" onclick="app.openTimingPoint('${tp.id}')">
           <div class="card-content">
@@ -145,13 +149,15 @@ const app = {
           </div>
           <div class="card-actions">
             <button class="btn-icon btn-icon-edit" onclick="event.stopPropagation();app.editTimingPoint('${tp.id}')">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
             <button class="btn-icon btn-icon-delete" onclick="event.stopPropagation();app.deleteTimingPoint('${tp.id}')">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
+            <button class="btn-reorder" onclick="event.stopPropagation();app.moveTimingPoint('${tp.id}','up')" ${tp._isFirst ? 'disabled' : ''}>&#9650;</button>
+            <button class="btn-reorder" onclick="event.stopPropagation();app.moveTimingPoint('${tp.id}','down')" ${tp._isLast ? 'disabled' : ''}>&#9660;</button>
           </div>
-          <span class="card-arrow">&#8250;</span>
+          <span class="card-dot">&middot;</span>
         </div>`).join('');
     }
 
@@ -206,6 +212,17 @@ const app = {
     document.getElementById('form-tp').reset(); this.navigateToEventDetail();
   },
   async deleteTimingPoint(id) { if (!confirm('Zeitmesspunkt wirklich löschen?')) return; await this.api('DELETE', `/api/timing-points/${id}`); this.showToast('Gelöscht'); this.loadEventDetail(); },
+  async moveTimingPoint(tpId, direction) {
+    const tps = this.exportTimingPoints;
+    const idx = tps.findIndex(tp => tp.id === tpId);
+    if (idx === -1) return;
+    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= tps.length) return;
+    const ids = tps.map(tp => tp.id);
+    [ids[idx], ids[newIdx]] = [ids[newIdx], ids[idx]];
+    await this.api('PUT', `/api/events/${this.currentEventId}/timing-points/reorder`, { ids });
+    this.loadEventDetail();
+  },
 
   // ─── Map ───────────────────────────────────────────────────────────────
   addTileLayers(map) {
@@ -357,7 +374,7 @@ const app = {
   renderEntries() {
     const container = document.getElementById('last-entries');
     const dups = this.getDuplicates();
-    const last5 = this.entries.slice(-5).reverse();
+    const last5 = [...this.entries].reverse();
     const dupColor = this.settings.duplicateColor || '#FF3B30';
 
     if (!last5.length) { container.innerHTML = '<div class="empty-state" style="padding:20px">Noch keine Einträge</div>'; return; }

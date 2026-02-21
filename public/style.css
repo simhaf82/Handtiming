@@ -55,6 +55,7 @@ body {
 
 /* ─── Main Content ──────────────────────────────────────────────────────── */
 #main-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#main-content.timing-active { overflow: hidden; display: flex; flex-direction: column; }
 .view { padding: 16px; min-height: 100%; }
 .view.hidden { display: none; }
 .view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -96,6 +97,7 @@ body {
 .card-badge { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
 .card-badge .badge-dup { color: var(--danger); font-weight: 600; }
 .card-arrow { color: var(--text-secondary); font-size: 18px; margin-left: 8px; flex-shrink: 0; }
+.card-dot { color: var(--text-secondary); font-size: 32px; margin-left: 8px; flex-shrink: 0; line-height: 1; }
 .card-actions { display: flex; gap: 6px; margin-left: 8px; flex-shrink: 0; align-items: center; }
 
 /* ─── Event Info Line ───────────────────────────────────────────────────── */
@@ -127,7 +129,7 @@ body {
   background: var(--bg); color: var(--text); font-family: inherit; outline: none;
   transition: border-color 0.15s; -webkit-appearance: none;
 }
-.form-group input[type="date"] { min-height: 44px; }
+.form-group input[type="date"], .form-group input[type="time"] { min-height: 44px; }
 .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
 .form-group input[type="color"] { height: 44px; padding: 4px; cursor: pointer; }
 .hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
@@ -178,7 +180,14 @@ body {
 .settings-tab-content.hidden { display: none; }
 
 /* ─── Timing Screen ─────────────────────────────────────────────────────── */
-.last-entries { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+#view-timing { display: flex; flex-direction: column; flex: 1; min-height: 0; padding-bottom: 0; overflow: hidden; }
+#view-timing .view-header { flex-shrink: 0; }
+#view-timing .tabs { flex-shrink: 0; }
+#tab-input { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+#tab-input.hidden { display: none; }
+.last-entries { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; flex: 1; overflow-y: auto; min-height: 0; }
+.input-display { flex-shrink: 0; margin-bottom: 12px; }
+.numpad { flex-shrink: 0; }
 
 .last-entry {
   background: var(--card); border-radius: var(--radius); padding: 10px 14px;
@@ -203,7 +212,6 @@ body {
 }
 .last-entry.swiped .swipe-delete { transform: translateX(0); }
 
-.input-display { margin-bottom: 12px; }
 .timestamp-display { font-size: 12px; color: var(--text-secondary); text-align: center; margin-bottom: 6px; min-height: 16px; font-variant-numeric: tabular-nums; }
 .input-row { display: flex; align-items: center; gap: 8px; }
 
@@ -295,6 +303,16 @@ body {
 .dnfdns-nr { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .dnfdns-name { font-size: 13px; color: var(--text-secondary); flex: 1; }
 .dnfdns-item .entry-delete { margin-left: auto; }
+
+/* ─── Reorder Buttons ──────────────────────────────────────────────────── */
+.btn-reorder {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: none; border-radius: var(--radius);
+  background: rgba(0,122,255,0.12); color: var(--primary); cursor: pointer;
+  font-size: 14px; font-weight: 700; transition: opacity 0.15s;
+}
+.btn-reorder:active { opacity: 0.7; }
+.btn-reorder:disabled { opacity: 0.3; cursor: default; }
 
 /* ─── Responsive & Scrollbar ────────────────────────────────────────────── */
 @media (min-width: 501px) { #app { border-left: 0.5px solid var(--separator); border-right: 0.5px solid var(--separator); } }
